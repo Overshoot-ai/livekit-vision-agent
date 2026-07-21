@@ -16,9 +16,9 @@
   <a href="https://docs.livekit.io/agents/">LiveKit Agents</a>
 </p>
 
-A production-ready starter for building **real-time video AI**: a [LiveKit Agents](https://docs.livekit.io/agents/) worker that joins a room, watches any live video track (webcam, screen share, or RTSP camera) and streams **structured JSON observations** back to every participant, powered by [Overshoot](https://overshoot.ai)'s sub-200ms vision-language model inference.
+A [LiveKit Agents](https://docs.livekit.io/agents/) worker that joins a room, watches whatever video gets published there (webcam, screen share, or an RTSP camera), and posts what it sees back into the room as JSON. Inference runs on [Overshoot](https://overshoot.ai), which serves open-weight vision-language models like Gemma 4 behind an OpenAI-compatible API, fast enough that a single look at the video usually comes back in a couple hundred milliseconds.
 
-Use it as the backbone for live camera monitoring, screen-understanding copilots, sports and gameplay analysis, robotics teleoperation, accessibility narration, or any application where an AI needs to *see* video as it happens, not seconds later.
+Every observation lands on a `vision` text stream that any LiveKit client can subscribe to:
 
 ```json
 {
@@ -30,14 +30,14 @@ Use it as the backbone for live camera monitoring, screen-understanding copilots
 }
 ```
 
-## Features
+Reasonable starting point for camera monitoring, screen-watching copilots, or anything else where an app needs a model's read on live video without waiting seconds for it.
 
-- **Real-time VLM inference**: Overshoot serves open-weight vision-language models (Gemma 4, Qwen3.6, and more) through an OpenAI-compatible API engineered to keep time-to-first-token under ~200ms.
-- **Three video sources out of the box**: [camera](examples/camera), [screen share](examples/screen-share), and [RTSP cameras](examples/rtsp) (IP cams, NVRs, drones).
-- **Structured JSON output**: define what you want as a JSON schema (`VISION_SCHEMA`); every observation is a validated JSON object published on a LiveKit text stream (`vision` topic).
-- **Two ingest modes**: inline JPEG frames (zero extra moving parts) or Overshoot's native WebRTC stream ingest, where requests reference `ovs://streams/{id}?frame_index=-1` and carry no pixels at all.
-- **Bundled demo frontend**: share your camera or screen and watch the JSON stream live, with per-request latency.
-- **Deployable anywhere**: Dockerfile included, one-click deploy to Render, or `lk agent deploy` for LiveKit Cloud.
+## What's in here
+
+- `src/agent.py`: the worker. Subscribes to the first video track in the room, samples it at `VISION_FPS`, sends your `VISION_PROMPT` plus the latest frame to the model, and publishes each JSON result.
+- `frontend/`: a single-page demo that publishes your camera or screen and prints the JSON stream with per-request latency. See [examples/camera](examples/camera) and [examples/screen-share](examples/screen-share).
+- `examples/rtsp/`: a bridge for IP cameras and NVRs. LiveKit Ingress can't pull RTSP, so this decodes the feed locally with PyAV and publishes it as a normal track.
+- `Dockerfile`, `render.yaml`, and a `taskfile.yaml`, so it deploys most places and bootstraps with `lk app create`.
 
 ## Architecture
 
@@ -76,19 +76,21 @@ flowchart LR
     ROOM -->|JSON observations| CLIENTS[Your app / demo frontend]
 ```
 
-The agent subscribes to the first video track in the room, samples it at `VISION_FPS`, queries Overshoot with your `VISION_PROMPT` + `VISION_SCHEMA`, and publishes each result to the room as a [text stream](https://docs.livekit.io/home/client/data/text-streams/) on the `vision` topic, so any LiveKit client (web, mobile, another agent) can consume the observations with a one-line handler.
+By default each request carries the latest frame as an inline JPEG, which keeps the moving parts to a minimum. Set `OVERSHOOT_INGEST_MODE=stream` and the agent instead republishes the room's video into an Overshoot ingest stream over WebRTC, then references it as `ovs://streams/{id}?frame_index=-1`. In that mode requests carry no pixels at all; it's the same path Overshoot's own ingest uses and has the lowest per-request overhead.
 
-## Quickstart
+Results go out as a [text stream](https://docs.livekit.io/home/client/data/text-streams/) on the `vision` topic, so consuming them from web, mobile, or another agent is a one-line handler.
 
-Prerequisites: [uv](https://docs.astral.sh/uv/), a [LiveKit Cloud](https://cloud.livekit.io) project (or self-hosted LiveKit), and an [Overshoot API key](https://platform.overshoot.ai).
+## Running it
 
-Bootstrap with the [LiveKit CLI](https://docs.livekit.io/cloud/home/cli):
+You need [uv](https://docs.astral.sh/uv/), a [LiveKit Cloud](https://cloud.livekit.io) project (or self-hosted LiveKit), and an [Overshoot API key](https://platform.overshoot.ai).
+
+With the [LiveKit CLI](https://docs.livekit.io/cloud/home/cli):
 
 ```bash
 lk app create --template-url https://github.com/Overshoot-ai/livekit-vision-agent my-vision-agent
 ```
 
-Or clone manually:
+or by hand:
 
 ```bash
 git clone https://github.com/Overshoot-ai/livekit-vision-agent.git
@@ -97,25 +99,45 @@ cp .env.example .env.local   # fill in LIVEKIT_* and OVERSHOOT_API_KEY
 uv sync
 ```
 
-Run the agent and the demo frontend in two terminals:
+Then, in two terminals:
 
 ```bash
 uv run src/agent.py dev
-task frontend                # → http://localhost:8080
+task frontend                # http://localhost:8080
 ```
 
-Click **Share camera** or **Share screen** and watch structured JSON observations stream in. For an RTSP source, see [examples/rtsp](examples/rtsp).
+Open the page, click **Share camera** or **Share screen**, and watch the JSON come back. For an RTSP source, see [examples/rtsp](examples/rtsp).
 
-## Structured JSON output
+## Structured output
 
-The default schema reports `summary`, `objects`, `activity`, and `alert`. Swap in your own with `VISION_SCHEMA`, the agent instructs the model to emit exactly that shape in JSON mode:
+The default schema has `summary`, `objects`, `activity`, and `alert` fields. To get a different shape, put a JSON schema in `VISION_SCHEMA` and the agent holds the model to it:
 
 ```bash
 VISION_PROMPT=Count the people and describe what each is doing.
 VISION_SCHEMA={"type":"object","properties":{"people_count":{"type":"integer"},"actions":{"type":"array","items":{"type":"string"}}},"required":["people_count","actions"]}
 ```
 
-Each published message also carries `_overshoot.latency_ms`, the wall-clock time of the inference request, so you can see the real-time budget you're working with.
+Each message also carries `_overshoot.latency_ms` (wall-clock time of the inference request), which is handy for figuring out what `VISION_FPS` your setup can actually sustain.
+
+## Deploying
+
+One-click on Render:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Overshoot-ai/livekit-vision-agent)
+
+LiveKit Cloud:
+
+```bash
+lk agent create
+lk agent deploy
+```
+
+Or anywhere that runs Docker:
+
+```bash
+docker build -t vision-agent .
+docker run --env-file .env.local vision-agent
+```
 
 ## Configuration
 
@@ -129,31 +151,11 @@ Each published message also carries `_overshoot.latency_ms`, the wall-clock time
 | `VISION_PROMPT` | describe the scene | What to look for, in plain English |
 | `VISION_SCHEMA` | see above | JSON schema for the structured output |
 
-## Deploy
+## More docs
 
-**One-click (Render):**
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Overshoot-ai/livekit-vision-agent)
-
-**LiveKit Cloud:**
-
-```bash
-lk agent create
-lk agent deploy
-```
-
-**Anywhere with Docker:**
-
-```bash
-docker build -t vision-agent .
-docker run --env-file .env.local vision-agent
-```
-
-## Learn more
-
-- [Overshoot × LiveKit integration guide](https://docs.overshoot.ai/integrations/livekit)
-- [Overshoot API reference](https://docs.overshoot.ai), streams, `ovs://` media URLs, model catalog
-- [LiveKit Agents docs](https://docs.livekit.io/agents/) · [Intro to LiveKit](https://docs.livekit.io/home/get-started/intro-to-livekit/)
+- [Overshoot + LiveKit integration guide](https://docs.overshoot.ai/integrations/livekit)
+- The [Overshoot API reference](https://docs.overshoot.ai) covers streams, `ovs://` media URLs, and the model catalog
+- [LiveKit Agents docs](https://docs.livekit.io/agents/) and [Intro to LiveKit](https://docs.livekit.io/home/get-started/intro-to-livekit/)
 
 ## License
 

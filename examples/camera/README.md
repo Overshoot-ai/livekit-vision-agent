@@ -22,4 +22,4 @@ Point the camera at things and change `VISION_PROMPT` in `.env.local` to steer w
 VISION_PROMPT=Is anyone in frame? What are they holding?
 ```
 
-Any LiveKit client can stand in for the demo page, the [Agents Playground](https://agents-playground.livekit.io) or your own app using the [LiveKit SDKs](https://docs.livekit.io/reference/).
+The demo page is nothing special. Any LiveKit client works, like the [Agents Playground](https://agents-playground.livekit.io) or your own app using the [LiveKit SDKs](https://docs.livekit.io/reference/).

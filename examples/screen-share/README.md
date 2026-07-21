@@ -1,6 +1,6 @@
 # Screen share → vision agent
 
-Watch a screen instead of a camera, live UI monitoring, dashboard watching, copilot-style "what am I looking at" assistants.
+Point the agent at a screen instead of a camera. Useful for UI monitoring, dashboard watching, or a copilot that knows what you are looking at.
 
 1. Start the agent:
 
@@ -23,4 +23,4 @@ VISION_PROMPT=Name the application on screen and summarize what the user is doin
 VISION_PROMPT=Watch this dashboard. Report any metric that looks anomalous in "alert".
 ```
 
-For screen-heavy workloads, also try a smaller `VISION_FPS` (e.g. `0.5`), screens change less often than cameras, and each analysis covers more tokens of UI text.
+For screen-heavy workloads, also try a smaller `VISION_FPS` like `0.5`. Screens change less often than cameras, and each analysis covers more of the UI text anyway.

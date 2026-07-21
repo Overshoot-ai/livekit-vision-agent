@@ -1,6 +1,6 @@
 # RTSP camera → vision agent
 
-Bridge an RTSP feed, IP camera, NVR, drone, CCTV, into the LiveKit room so the agent can analyze it.
+Bring an RTSP feed (IP camera, NVR, drone) into the LiveKit room so the agent can analyze it.
 
 LiveKit Ingress pulls HTTP/SRT sources but not RTSP, so this example decodes the stream locally with [PyAV](https://github.com/PyAV-Org/PyAV) and publishes it as a WebRTC track:
 
