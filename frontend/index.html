@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overshoot × LiveKit — Real-time vision agent demo</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: #0b0d12; color: #e8eaf0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header { padding: 20px 28px; border-bottom: 1px solid #1d2230; display: flex; align-items: baseline; gap: 12px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header span { color: #8b93a7; font-size: 13px; }
+  main { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel { background: #10131b; border: 1px solid #1d2230; border-radius: 12px; overflow: hidden; }
+  .panel h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #8b93a7; margin: 0; padding: 12px 16px; border-bottom: 1px solid #1d2230; }
+  video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
+  .controls { padding: 14px 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button {
+    background: #2450ff; color: #fff; border: 0; border-radius: 8px; padding: 9px 16px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  button.secondary { background: #1d2230; }
+  button:disabled { opacity: .45; cursor: default; }
+  #status { font-size: 13px; color: #8b93a7; margin-left: auto; }
+  #latest {
+    padding: 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+    white-space: pre-wrap; word-break: break-word; min-height: 120px; color: #7ee787;
+  }
+  #log { padding: 0 16px 16px; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: #8b93a7; max-height: 320px; overflow-y: auto; }
+  #log div { padding: 6px 0; border-top: 1px solid #161a26; }
+  .meta { color: #566; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Real-time vision agent</h1>
+  <span>LiveKit WebRTC → Overshoot VLM → structured JSON</span>
+</header>
+<main>
+  <section class="panel">
+    <h2>Video source</h2>
+    <video id="preview" autoplay muted playsinline></video>
+    <div class="controls">
+      <button id="camBtn">Share camera</button>
+      <button id="screenBtn" class="secondary">Share screen</button>
+      <button id="stopBtn" class="secondary" disabled>Stop</button>
+      <span id="status">disconnected</span>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Structured output (topic: vision)</h2>
+    <div id="latest">— waiting for agent —</div>
+    <div id="log"></div>
+  </section>
+</main>
+<script>
+const { Room, RoomEvent, createLocalVideoTrack, createLocalScreenTracks } = LivekitClient;
+
+const statusEl = document.getElementById('status');
+const latestEl = document.getElementById('latest');
+const logEl = document.getElementById('log');
+const preview = document.getElementById('preview');
+const camBtn = document.getElementById('camBtn');
+const screenBtn = document.getElementById('screenBtn');
+const stopBtn = document.getElementById('stopBtn');
+
+let room = null;
+let publishedTrack = null;
+
+async function connect() {
+  if (room) return room;
+  const res = await fetch('/token');
+  const { url, token } = await res.json();
+  room = new Room();
+  room.registerTextStreamHandler('vision', async (reader, participant) => {
+    const text = await reader.readAll();
+    let pretty = text;
+    try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+    latestEl.textContent = pretty;
+    const entry = document.createElement('div');
+    entry.innerHTML = `<span class="meta">${new Date().toLocaleTimeString()} · ${participant?.identity ?? 'agent'}</span><br>`;
+    entry.append(text);
+    logEl.prepend(entry);
+    while (logEl.childElementCount > 50) logEl.lastChild.remove();
+  });
+  room.on(RoomEvent.Disconnected, () => { statusEl.textContent = 'disconnected'; room = null; });
+  await room.connect(url, token);
+  statusEl.textContent = `connected · ${room.name}`;
+  return room;
+}
+
+async function publish(kind) {
+  camBtn.disabled = screenBtn.disabled = true;
+  try {
+    const r = await connect();
+    await stopTrack();
+    if (kind === 'camera') {
+      publishedTrack = await createLocalVideoTrack({ resolution: { width: 1280, height: 720 } });
+    } else {
+      const tracks = await createLocalScreenTracks({ audio: false });
+      publishedTrack = tracks.find(t => t.kind === 'video');
+    }
+    await r.localParticipant.publishTrack(publishedTrack);
+    publishedTrack.attach(preview);
+    statusEl.textContent = `publishing ${kind} · ${r.name}`;
+    stopBtn.disabled = false;
+  } catch (e) {
+    statusEl.textContent = `error: ${e.message}`;
+  } finally {
+    camBtn.disabled = screenBtn.disabled = false;
+  }
+}
+
+async function stopTrack() {
+  if (!publishedTrack) return;
+  publishedTrack.detach();
+  await room?.localParticipant.unpublishTrack(publishedTrack);
+  publishedTrack.stop();
+  publishedTrack = null;
+  stopBtn.disabled = true;
+}
+
+camBtn.onclick = () => publish('camera');
+screenBtn.onclick = () => publish('screen');
+stopBtn.onclick = () => { stopTrack(); statusEl.textContent = `connected · ${room?.name ?? ''}`; };
+</script>
+</body>
+</html>

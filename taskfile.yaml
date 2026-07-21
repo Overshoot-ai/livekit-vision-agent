@@ -1,0 +1,45 @@
+version: "3"
+dotenv: [".env.local", ".env"]
+vars:
+  INDENT: 4
+
+tasks:
+  post_create:
+    desc: "Runs after this template is instantiated with `lk app create`"
+    cmds:
+      - echo 'Your real-time vision agent has been created!'
+      - echo ''
+      - echo 'To run the agent locally:'
+      - echo ''
+      - echo '{{ indent .INDENT "uv sync" }}'
+      - echo '{{ indent .INDENT "uv run src/agent.py dev" }}'
+      - echo ''
+      - echo 'Then publish video into the room and watch structured JSON come back:'
+      - echo ''
+      - echo '{{ indent .INDENT "task frontend    # camera + screen share demo at http://localhost:8080" }}'
+      - echo '{{ indent .INDENT "task rtsp -- rtsp://<host>/<path>    # bridge an RTSP feed" }}'
+      - echo ''
+      - echo 'Docs: https://docs.overshoot.ai/integrations/livekit'
+
+  install:
+    desc: "Install dependencies for local development"
+    cmds:
+      - "uv sync"
+
+  dev:
+    desc: "Run the vision agent worker in dev mode"
+    interactive: true
+    cmds:
+      - "uv run src/agent.py dev"
+
+  frontend:
+    desc: "Serve the camera / screen-share demo frontend on http://localhost:8080"
+    interactive: true
+    cmds:
+      - "uv run frontend/serve.py"
+
+  rtsp:
+    desc: "Publish an RTSP stream into the room (usage: task rtsp -- rtsp://host/path)"
+    interactive: true
+    cmds:
+      - "uv run examples/rtsp/publish_rtsp.py {{ .CLI_ARGS }}"

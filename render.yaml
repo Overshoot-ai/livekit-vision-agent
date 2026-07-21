@@ -1,0 +1,18 @@
+services:
+  - type: worker
+    name: overshoot-vision-agent
+    runtime: docker
+    plan: starter
+    envVars:
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: OVERSHOOT_API_KEY
+        sync: false
+      - key: OVERSHOOT_MODEL
+        value: google/gemma-4-26B-A4B-it
+      - key: VISION_FPS
+        value: "2"
