@@ -19,7 +19,7 @@
 A [LiveKit Agents](https://docs.livekit.io/agents/) worker that joins a room, watches whatever video gets published there (webcam, screen share, or an RTSP camera), and posts what it sees back into the room as JSON. Inference runs on [Overshoot](https://overshoot.ai), which serves open-weight vision-language models like Gemma 4 behind an OpenAI-compatible API, fast enough that a single look at the video usually comes back in a couple hundred milliseconds.
 
 Every observation lands on a `vision` text stream that any LiveKit client can subscribe to:
-
+ 
 ```json
 {
   "summary": "A person is standing at a desk holding a coffee mug",
