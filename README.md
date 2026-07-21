@@ -32,7 +32,7 @@ Use it as the backbone for live camera monitoring, screen-understanding copilots
 
 ## Features
 
-- **Real-time VLM inference**: Overshoot serves open-weight vision-language models (Gemma 4, Qwen3.5-VL, and more) through an OpenAI-compatible API engineered to keep time-to-first-token under ~200ms.
+- **Real-time VLM inference**: Overshoot serves open-weight vision-language models (Gemma 4, Qwen3.6, and more) through an OpenAI-compatible API engineered to keep time-to-first-token under ~200ms.
 - **Three video sources out of the box**: [camera](examples/camera), [screen share](examples/screen-share), and [RTSP cameras](examples/rtsp) (IP cams, NVRs, drones).
 - **Structured JSON output**: define what you want as a JSON schema (`VISION_SCHEMA`); every observation is a validated JSON object published on a LiveKit text stream (`vision` topic).
 - **Two ingest modes**: inline JPEG frames (zero extra moving parts) or Overshoot's native WebRTC stream ingest, where requests reference `ovs://streams/{id}?frame_index=-1` and carry no pixels at all.
