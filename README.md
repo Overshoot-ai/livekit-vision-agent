@@ -11,7 +11,7 @@
   •
   <a href="https://platform.overshoot.ai">Get an API key</a>
   •
-  <a href="https://models.overshoot.ai">Models</a>
+  <a href="https://docs.overshoot.ai/models">Models</a>
   •
   <a href="https://docs.livekit.io/agents/">LiveKit Agents</a>
 </p>
@@ -123,7 +123,7 @@ Each published message also carries `_overshoot.latency_ms`, the wall-clock time
 | --- | --- | --- |
 | `LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | (required) | Your LiveKit project credentials |
 | `OVERSHOOT_API_KEY` | (required) | Overshoot API key ([platform.overshoot.ai](https://platform.overshoot.ai)) |
-| `OVERSHOOT_MODEL` | `google/gemma-4-26B-A4B-it` | Any VLM from [models.overshoot.ai](https://models.overshoot.ai) |
+| `OVERSHOOT_MODEL` | `google/gemma-4-26B-A4B-it` | Any VLM from [the model catalog](https://docs.overshoot.ai/models) |
 | `OVERSHOOT_INGEST_MODE` | `frames` | `frames` (inline JPEG) or `stream` (WebRTC ingest + `ovs://` refs) |
 | `VISION_FPS` | `2` | Analyses per second |
 | `VISION_PROMPT` | describe the scene | What to look for, in plain English |
@@ -153,7 +153,6 @@ docker run --env-file .env.local vision-agent
 
 - [Overshoot × LiveKit integration guide](https://docs.overshoot.ai/integrations/livekit)
 - [Overshoot API reference](https://docs.overshoot.ai), streams, `ovs://` media URLs, model catalog
-- [Real-time VLM benchmarks](https://benchmarks.overshoot.ai), latency and cost across models
 - [LiveKit Agents docs](https://docs.livekit.io/agents/) · [Intro to LiveKit](https://docs.livekit.io/home/get-started/intro-to-livekit/)
 
 ## License
