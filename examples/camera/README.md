@@ -14,7 +14,7 @@ Analyze a live camera feed in real time.
    task frontend
    ```
 
-3. Click **Share camera**. The agent joins the room, watches the track, and streams structured JSON observations back on the `vision` topic — you'll see them appear in the right panel with per-request latency.
+3. Click **Share camera**. The agent joins the room, watches the track, and streams structured JSON observations back on the `vision` topic, you'll see them appear in the right panel with per-request latency.
 
 Point the camera at things and change `VISION_PROMPT` in `.env.local` to steer what the agent looks for, e.g.:
 
@@ -22,4 +22,4 @@ Point the camera at things and change `VISION_PROMPT` in `.env.local` to steer w
 VISION_PROMPT=Is anyone in frame? What are they holding?
 ```
 
-Any LiveKit client can stand in for the demo page — the [Agents Playground](https://agents-playground.livekit.io) or your own app using the [LiveKit SDKs](https://docs.livekit.io/reference/).
+Any LiveKit client can stand in for the demo page, the [Agents Playground](https://agents-playground.livekit.io) or your own app using the [LiveKit SDKs](https://docs.livekit.io/reference/).

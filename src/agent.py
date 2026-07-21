@@ -6,9 +6,9 @@ model on Overshoot, and publishes structured JSON observations back into
 the room on the `vision` text-stream topic.
 
 Two ingest modes (OVERSHOOT_INGEST_MODE):
-  frames  (default) — encode the latest frame as JPEG and send it inline
+  frames  (default), encode the latest frame as JPEG and send it inline
           with each request. Simplest; no extra moving parts.
-  stream  — republish the video into an Overshoot ingest stream over
+  stream, republish the video into an Overshoot ingest stream over
           WebRTC and reference it as ovs://streams/{id}?frame_index=-1.
           Requests carry no pixels at all; lowest per-request overhead.
 """

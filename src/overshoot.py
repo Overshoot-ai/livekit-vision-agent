@@ -6,7 +6,7 @@ referenced in chat completions as `ovs://streams/{id}?frame_index=-1` (latest
 frame) instead of re-uploading a base64 image on every request.
 
 Stream leases last 300s, so a keepalive is posted every 120s. The server only
-holds the most recent frames, and `capture_frame` doesn't buffer — a heartbeat
+holds the most recent frames, and `capture_frame` doesn't buffer, a heartbeat
 re-pushes the last frame at 8 fps so `frame_index=-1` never goes stale.
 """
 

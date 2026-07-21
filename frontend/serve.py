@@ -45,6 +45,6 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     for var in ("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"):
         if not os.environ.get(var):
-            raise SystemExit(f"{var} is not set — copy .env.example to .env.local and fill it in")
+            raise SystemExit(f"{var} is not set, copy .env.example to .env.local and fill it in")
     print(f"Demo frontend on http://localhost:{PORT}  (room: {ROOM_NAME})")
     HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
